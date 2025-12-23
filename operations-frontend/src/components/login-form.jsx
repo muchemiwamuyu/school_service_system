@@ -14,11 +14,50 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { useForm } from "react-hook-form"
+import axios from "axios"
+import { toast } from "sonner"
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "./context/AuthContext"
 
-export function LoginForm({
-  className,
-  ...props
-}) {
+export function LoginForm({ className, ...props }) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm()
+
+  const navigate = useNavigate()
+  const {login} = useAuth()
+
+  const onSubmit = async (data) => {
+  const payLoad = {
+    admin_email: data.admin_email,
+    admin_password: data.admin_password,
+  }
+
+  try {
+    const res = await axios.post(
+      "http://localhost:8000/auth/external-login-access/",
+      payLoad
+    )
+
+    toast.success(res.data.message || "Login successful")
+    reset()
+    login({"id": 1, "role": "admin"})
+    
+    // Store admin info
+    localStorage.setItem("adminData", JSON.stringify(res.data.user)) // full object
+    
+    navigate("/dashboard")
+  } catch (error) {
+    toast.error(error.response?.data?.error || "Login failed")
+    console.error(error.response?.data || error.message)
+  }
+}
+
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
@@ -29,25 +68,53 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input id="email" type="email" placeholder="m@example.com" required />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  {...register("admin_email", {
+                    required: "Email is required",
+                  })}
+                />
+                {errors.admin_email && (
+                  <FieldDescription className="text-red-500">
+                    {errors.admin_email.message}
+                  </FieldDescription>
+                )}
               </Field>
+
               <Field>
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
                   <a
                     href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline">
+                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+                  >
                     Forgot your password?
                   </a>
                 </div>
-                <Input id="password" type="password" required />
+                <Input
+                  id="password"
+                  type="password"
+                  {...register("admin_password", {
+                    required: "Password is required",
+                  })}
+                />
+                {errors.admin_password && (
+                  <FieldDescription className="text-red-500">
+                    {errors.admin_password.message}
+                  </FieldDescription>
+                )}
               </Field>
+
               <Field>
-                <Button type="submit">Login</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Logging in..." : "Login"}
+                </Button>
                 <Button variant="outline" type="button">
                   Login with Google
                 </Button>
@@ -60,5 +127,5 @@ export function LoginForm({
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

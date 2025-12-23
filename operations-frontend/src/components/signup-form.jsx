@@ -16,14 +16,18 @@ import {
 import { Input } from "@/components/ui/input"
 import { useForm } from "react-hook-form"
 import axios from "axios"
+import { toast } from "sonner"
+import { useNavigate } from "react-router-dom"
 
 export function SignupForm({ className, ...props }) {
   const {
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm()
+  const navigate = useNavigate()
 
   const password = watch("admin_password")
 
@@ -37,10 +41,13 @@ export function SignupForm({ className, ...props }) {
     try {
       console.log(payLoad)
       const res = await axios.post(
-        "http://localhost:8000/auth/external-access",
+        "http://localhost:8000/auth/external-access/",
         payLoad
       )
-      console.log(res.data)
+
+      toast.success('Account created successfully')
+      reset()
+      navigate('/login')
     } catch (error) {
       console.error(error.response?.data || error.message)
     }
